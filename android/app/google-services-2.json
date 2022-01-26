@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "371396287981",
+    "firebase_url": "https://shopar-bdbba-default-rtdb.firebaseio.com",
+    "project_id": "shopar-bdbba",
+    "storage_bucket": "shopar-bdbba.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371396287981:android:b0560bee0be08145d09be4",
+        "android_client_info": {
+          "package_name": "com.example.untitled"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "371396287981-tckrg5mhi50t6lq16kprpv1ioim885tm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkpPS-JVVQtJhh1hVmsSCQyicQDexDUAw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "371396287981-tckrg5mhi50t6lq16kprpv1ioim885tm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

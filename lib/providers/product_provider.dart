@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:untitled/models/http_cutsom_exception.dart';
 import '../models/products.dart';
@@ -44,31 +45,67 @@ class ProductProvider with ChangeNotifier{
   Products findById (String id){
     return _items.firstWhere((element) => element.id == id);
   }
+  // Future<void> fetchandsetProduct() async {
+  //   final url = 'https://shopar-bdbba-default-rtdb.firebaseio.com/procduct.json';
+  //   try{
+  //
+  //     final response = await http.get(Uri.parse(url));
+  //     final extracteddata = json.decode(response.body) as Map<String,dynamic>;
+  //     if(extracteddata.isEmpty) {
+  //       return;
+  //     }
+  //     final List<Products>loadedProducts = [];
+  //     extracteddata.forEach((productID, prodData) {
+  //       loadedProducts.add(Products(
+  //         id: productID,
+  //         title: prodData['title'],
+  //         description: prodData['description'],
+  //         price: prodData['price'],
+  //         imageurl: prodData['imageurl'],
+  //         isFavorite: prodData['isFavorite'],
+  //
+  //       ));
+  //       _items = loadedProducts;
+  //       notifyListeners();
+  //     });
+  //   }catch(error){
+  //     print(error);
+  //   }
+  // }
   Future<void> fetchandsetProduct() async {
-    final url = 'https://shopar-bdbba-default-rtdb.firebaseio.com/procduct.json';
-    try{
-
-      final response = await http.get(Uri.parse(url));
-      final extracteddata = json.decode(response.body) as Map<String,dynamic>;
-      if(extracteddata.isEmpty) {
+    // final url = Uri.https('https://shopar-bdbba-default-rtdb.firebaseio.com', '/products.json');
+    // final url = Uri.https('flutter-update.firebaseio.com', '/products.json');
+    try {
+      log('Star trying');
+      final response = await http.get(Uri.parse(
+          "https://shopar-bdbba-default-rtdb.firebaseio.com/procduct.json?"));
+      log('Star extracting data');
+      // final Map<String, dynamic> extractedData = json.decode(response.body);
+      final extractedData = json.decode(response.body) as Map<String, dynamic>;
+      log('Star checking data');
+      if (extractedData == null) {
+        log('Null');
         return;
       }
-      final List<Products>loadedProducts = [];
-      extracteddata.forEach((productID, prodData) {
+      final List<Products> loadedProducts = [];
+      log('Star List');
+      extractedData.forEach((prodId, prodData) {
+        log('Star Adding to list');
         loadedProducts.add(Products(
-          id: productID,
-          title: prodData['title'],
-          description: prodData['description'],
-          price: prodData['price'],
-          imageurl: prodData['imageurl'],
-          isFavorite: prodData['isFavorite'],
-
+          id: prodId,
+          title: prodData['title'] ?? "null",
+          description: prodData['description'] ?? "null",
+          price: prodData['price'] ?? 0.0,
+          isFavorite: prodData['isFavorite'] ?? false,
+           imageurl: prodData['imageurl'] ?? "null",
         ));
-        _items = loadedProducts;
-        notifyListeners();
       });
-    }catch(error){
-      print(error);
+      log('List done');
+      _items = loadedProducts;
+      notifyListeners();
+    } catch (error) {
+      log('Exception $error');
+      throw (error);
     }
   }
   Future<void> addProduct(Products product) async {
