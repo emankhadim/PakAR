@@ -1,5 +1,14 @@
+import 'dart:developer';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:untitled/main.dart';
+import 'package:untitled/models/user_model.dart';
 import 'package:untitled/screens/Auth/signup_page.dart';
+import 'package:untitled/screens/products_screen.dart';
+import 'package:untitled/screens/role_error_page.dart';
+import 'package:untitled/screens/user_product_screen.dart';
 
 import 'Widget/bazier_container.dart';
 
@@ -13,6 +22,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
   Widget _backButton() {
     return InkWell(
       onTap: () {
@@ -34,7 +49,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _entryField(String title, {bool isPassword = false}) {
+  Widget _entryField(String title, TextEditingController controller,
+      {bool isPassword = false}) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       child: Column(
@@ -48,6 +64,7 @@ class _LoginPageState extends State<LoginPage> {
             height: 10,
           ),
           TextField(
+              controller: controller,
               obscureText: isPassword,
               decoration: InputDecoration(
                   border: InputBorder.none,
@@ -163,6 +180,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
   Widget _googleButton() {
     return Container(
       height: 50,
@@ -252,8 +270,7 @@ class _LoginPageState extends State<LoginPage> {
           style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w700,
-              color: Color(0xff519259)
-          ),
+              color: Color(0xff519259)),
           children: [
             TextSpan(
               text: 'ak',
@@ -261,7 +278,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextSpan(
               text: '- AR',
-              style: TextStyle(color: Color(0xff519259).withOpacity(0.4), fontSize: 30),
+              style: TextStyle(
+                  color: Color(0xff519259).withOpacity(0.4), fontSize: 30),
             ),
           ]),
     );
@@ -270,8 +288,8 @@ class _LoginPageState extends State<LoginPage> {
   Widget _emailPasswordWidget() {
     return Column(
       children: <Widget>[
-        _entryField("Email"),
-        _entryField("Password", isPassword: true),
+        _entryField("Email", emailController),
+        _entryField("Password", passwordController, isPassword: true),
       ],
     );
   }
@@ -281,45 +299,89 @@ class _LoginPageState extends State<LoginPage> {
     final height = MediaQuery.of(context).size.height;
     return Scaffold(
         body: Container(
-          height: height,
-          child: Stack(
-            children: <Widget>[
-              Positioned(
-                  top: -height * .15,
-                  right: -MediaQuery.of(context).size.width * .4,
-                  child: BezierContainer()),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      SizedBox(height: height * .2),
-                      _title(),
-                      SizedBox(height: 50),
-                      _emailPasswordWidget(),
-                      SizedBox(height: 20),
-                      _submitButton(),
-                      Container(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        alignment: Alignment.centerRight,
-                        child: Text('Forgot Password ?',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w500)),
-                      ),
-                      _divider(),
-                      _facebookButton(),
-                      _googleButton(),
-                      SizedBox(height: 2),
-                      // _createAccountLabel(),
-                    ],
+      height: height,
+      child: Stack(
+        children: <Widget>[
+          Positioned(
+              top: -height * .15,
+              right: -MediaQuery.of(context).size.width * .4,
+              child: BezierContainer()),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox(height: height * .2),
+                  _title(),
+                  SizedBox(height: 50),
+                  _emailPasswordWidget(),
+                  SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () async {
+                      log(emailController.text + passwordController.text);
+                      try {
+                        final UserCredential authResult =
+                            await auth.signInWithEmailAndPassword(
+                          email: emailController.text,
+                          password: passwordController.text,
+                        );
+                        UserModel user = await firestore
+                            .collection('users')
+                            .doc(authResult.user!.uid)
+                            .get()
+                            .then((value) {
+                          return UserModel(
+                            uid: value.get('uid'),
+                            name: value.get('name'),
+                            email: value.get('email'),
+                            userRole: value.get('userRole'),
+                          );
+                        });
+                        userName = user.name ?? "User Name";
+                        if (user.userRole == 'Seller') {
+                          isSeller = true;
+                          Navigator.pushReplacementNamed(
+                            context,
+                            ProductScreens.routeName,
+                          );
+                          log('User is Seller');
+                        } else if (user.userRole == 'Customer') {
+                          isSeller = false;
+                          Navigator.pushReplacementNamed(
+                            context,
+                            ProductScreens.routeName,
+                          );
+                          log('User is Customer');
+                        } else {
+                          isSeller = false;
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => RoleError()));
+                        }
+                      } catch (e) {}
+                    },
+                    child: _submitButton(),
                   ),
-                ),
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    alignment: Alignment.centerRight,
+                    child: Text('Forgot Password ?',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w500)),
+                  ),
+                  _divider(),
+                  _facebookButton(),
+                  _googleButton(),
+                  SizedBox(height: 2),
+                  // _createAccountLabel(),
+                ],
               ),
-              Positioned(top: 40, left: 0, child: _backButton()),
-            ],
+            ),
           ),
-        ));
+          Positioned(top: 40, left: 0, child: _backButton()),
+        ],
+      ),
+    ));
   }
 }

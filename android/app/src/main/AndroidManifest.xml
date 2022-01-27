@@ -1,7 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.untitled">
+    <uses-permission android:name="android.permission.INTERNET"/>
    <application
-        android:label="untitled"
+        android:label="PakAR"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

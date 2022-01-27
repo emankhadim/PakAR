@@ -1,9 +1,14 @@
+import 'dart:developer';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:custom_radio_grouped_button/custom_radio_grouped_button.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:untitled/models/user_model.dart';
 import 'package:untitled/screens/Auth/login_page.dart';
 
-
 class SignUpPage extends StatefulWidget {
-  SignUpPage({Key ?key, this.title}) : super(key: key);
+  SignUpPage({Key? key, this.title}) : super(key: key);
   static const routeName = '/signup';
   final String? title;
 
@@ -12,6 +17,12 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
   Widget _backButton() {
     return InkWell(
       onTap: () {
@@ -33,7 +44,8 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _entryField(String title, {bool isPassword = false}) {
+  Widget _entryField(String title, TextEditingController controller,
+      {bool isPassword = false}) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       child: Column(
@@ -47,6 +59,7 @@ class _SignUpPageState extends State<SignUpPage> {
             height: 10,
           ),
           TextField(
+              controller: controller,
               obscureText: isPassword,
               decoration: InputDecoration(
                   border: InputBorder.none,
@@ -121,11 +134,7 @@ class _SignUpPageState extends State<SignUpPage> {
       text: TextSpan(
           text: 'P',
           style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w700,
-              color: Colors.green
-          ),
-
+              fontSize: 30, fontWeight: FontWeight.w700, color: Colors.green),
           children: [
             TextSpan(
               text: 'ak',
@@ -142,13 +151,16 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget _emailPasswordWidget() {
     return Column(
       children: <Widget>[
-        _entryField("Username"),
-        _entryField("Email"),
-        _entryField("Password", isPassword: true),
+        _entryField("Username", nameController),
+        _entryField("Email", emailController),
+        _entryField("Password", passwordController, isPassword: true),
       ],
     );
   }
 
+  String userRole = 'Customer';
+  static final String customer = 'Customer';
+  static final String seller = 'Seller';
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height;
@@ -175,11 +187,77 @@ class _SignUpPageState extends State<SignUpPage> {
                       height: 50,
                     ),
                     _emailPasswordWidget(),
+                    const SizedBox(height: 10),
+                    Text('Signup as'),
+                    const SizedBox(height: 10),
+                    CustomRadioButton(
+                      elevation: 0,
+                      defaultSelected: customer,
+                      buttonLables: [customer, seller],
+                      buttonValues: [customer, seller],
+                      radioButtonValue: (val) {
+                        log(val.toString());
+                        userRole = val.toString();
+                      },
+                      unSelectedColor: Colors.grey[350]!,
+                      selectedColor: Colors.green,
+                      unSelectedBorderColor: Colors.transparent,
+                    ),
                     SizedBox(
                       height: 20,
                     ),
-                    _submitButton(),
-                    SizedBox(height: height * .14),
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          final UserCredential authResult =
+                              await auth.createUserWithEmailAndPassword(
+                                  email: emailController.text,
+                                  password: passwordController.text);
+                          UserModel userModel = UserModel(
+                            uid: authResult.user!.uid,
+                            name: nameController.text,
+                            email: emailController.text,
+                            userRole: userRole,
+                          );
+                          await firestore
+                              .collection('users')
+                              .doc(authResult.user!.uid)
+                              .set({
+                            'uid': userModel.uid,
+                            'name': userModel.name,
+                            'email': userModel.email,
+                            'userRole': userModel.userRole,
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Signup Successful',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          Navigator.pop(context);
+                        } catch (e) {
+                          log(e.toString());
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: Duration(seconds: 3),
+                              content: Text(
+                                e.toString(),
+                              ),
+                              backgroundColor: Colors.pink[900],
+                            ),
+                          );
+                        }
+
+                        // log(userRole);
+                        // log(nameController.text +
+                        //     emailController.text +
+                        //     passwordController.text);
+                      },
+                      child: _submitButton(),
+                    ),
+                    SizedBox(height: height * .04),
                     _loginAccountLabel(),
                   ],
                 ),
